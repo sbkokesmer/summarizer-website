@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Verification - Summarizer & Translator AI</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <nav>
+        <div class="nav-container">
+            <a href="/" class="logo">Summarizer & Translator AI</a>
+            <div class="nav-links">
+                <a href="privacy.html">Privacy Policy</a>
+                <a href="terms.html">Terms of Service</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="confirm-container" id="loading">
+        <div class="spinner"></div>
+        <h1>Verifying your email...</h1>
+        <p>Please wait a moment.</p>
+    </div>
+
+    <div class="confirm-container" id="success" style="display:none;">
+        <div class="confirm-icon">&#10003;</div>
+        <h1>Email Verified!</h1>
+        <p>Your email has been successfully verified.</p>
+        <p>You can now open the Summarizer & Translator AI app and sign in.</p>
+        <p class="sub">You may close this page.</p>
+    </div>
+
+    <div class="confirm-container" id="error" style="display:none;">
+        <div class="confirm-icon error">&#10007;</div>
+        <h1>Verification Failed</h1>
+        <p id="error-message">The verification link may have expired or is invalid.</p>
+        <p class="sub">Please try signing up again or contact <a href="mailto:support@summalingua.com">support@summalingua.com</a></p>
+    </div>
+
+    <footer>
+        <p>&copy; 2026 Summarizer & Translator AI. All rights reserved.</p>
+    </footer>
+
+    <script>
+        // Supabase email confirmation redirects here with token_hash & type in URL
+        // Example: /confirm.html#access_token=...&type=signup
+        // Or: /confirm.html?token_hash=...&type=signup
+
+        async function verifyEmail() {
+            const hash = window.location.hash.substring(1);
+            const searchParams = new URLSearchParams(window.location.search);
+            const hashParams = new URLSearchParams(hash);
+
+            // Check for Supabase PKCE flow (token_hash + type in query params)
+            const tokenHash = searchParams.get('token_hash');
+            const type = searchParams.get('type');
+
+            // Check for implicit flow (access_token in hash)
+            const accessToken = hashParams.get('access_token');
+
+            if (tokenHash && type) {
+                // PKCE flow - call Supabase verify endpoint
+                try {
+                    const supabaseUrl = 'https://yrwefrsorhckevagxfnz.supabase.co';
+                    const response = await fetch(`${supabaseUrl}/auth/v1/verify`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ token_hash: tokenHash, type: type })
+                    });
+
+                    if (response.ok) {
+                        showSuccess();
+                    } else {
+                        const data = await response.json();
+                        showError(data.error_description || data.msg || 'Verification failed.');
+                    }
+                } catch (e) {
+                    showError('Network error. Please try again.');
+                }
+            } else if (accessToken) {
+                // Implicit flow - token is already in the hash, verification succeeded
+                showSuccess();
+            } else {
+                // No token found - show info page
+                showError('No verification token found. Please use the link from your email.');
+            }
+        }
+
+        function showSuccess() {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('success').style.display = 'flex';
+        }
+
+        function showError(message) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('error').style.display = 'flex';
+            if (message) {
+                document.getElementById('error-message').textContent = message;
+            }
+        }
+
+        verifyEmail();
+    </script>
+</body>
+</html>
